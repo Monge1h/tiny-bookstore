@@ -61,7 +61,7 @@ model RefreshToken {
 }
 
 model Book {
-  id          String    @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
   author      String
   description String
@@ -69,13 +69,24 @@ model Book {
   stock       Int?
   fileUrl     String?
   type        BookType
+  images      BookImage[]
   likes       Like[]
   cartItems   CartItem[]
   orders      OrderItem[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now()) @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
 }
 
+model BookImage {
+  id        String   @id @default(uuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id])
+  imageUrl  String
+  isPrimary Boolean  @default(false)
+
+  @@index([bookId])
+  @@index([bookId, isPrimary])
+}
 model Like {
   id        String   @id @default(uuid())
   userId    String
