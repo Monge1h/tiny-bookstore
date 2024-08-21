@@ -21,5 +21,6 @@ import { ConfigurationService } from 'src/configuration/configuration.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
