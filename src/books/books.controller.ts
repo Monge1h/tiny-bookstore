@@ -14,7 +14,17 @@ import {
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { QueryParamsDto } from 'src/shared/dto/pagination.dto';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiQuery,
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -31,6 +41,13 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new book (Manager only)' })
+  @ApiResponse({ status: 201, description: 'Book successfully created.' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden. Only managers can create books.',
+  })
+  @ApiBody({ type: CreateBookDto })
   @Post()
   async createBook(@Body() createBookDto: CreateBookDto) {
     return this.booksService.createBook(createBookDto);
@@ -38,6 +55,19 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Upload a file (image or PDF) for a book (Manager only)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'File upload',
+    type: UploadFileDto,
+  })
+  @ApiResponse({ status: 200, description: 'File successfully uploaded.' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden. Only managers can upload files.',
+  })
   @Post(':id/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
@@ -50,6 +80,12 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update a book (Manager only)' })
+  @ApiResponse({ status: 200, description: 'Book successfully updated.' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden. Only managers can update books.',
+  })
   @Patch(':id')
   async updateBook(
     @Param('id') id: string,
@@ -60,11 +96,20 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete a book (Manager only)' })
+  @ApiResponse({ status: 200, description: 'Book successfully deleted.' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden. Only managers can delete books.',
+  })
   @Delete(':id')
   async deleteBook(@Param('id') id: string) {
     return this.booksService.deleteBook(id);
   }
 
+  @ApiOperation({
+    summary: 'Get a list of all books with pagination and search',
+  })
   @ApiQuery({
     name: 'search',
     type: String,
@@ -79,12 +124,17 @@ export class BooksController {
     name: 'limit',
     type: String,
     required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of books returned successfully.',
   })
   @Get()
   findAll(@Query() params: QueryParamsDto) {
     return this.booksService.findAll({ ...params });
   }
 
+  @ApiOperation({ summary: 'Get books by category with pagination and search' })
   @ApiQuery({
     name: 'search',
     type: String,
@@ -99,6 +149,10 @@ export class BooksController {
     name: 'limit',
     type: String,
     required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of books in the category returned successfully.',
   })
   @Get('category/:categoryId')
   findByCategory(
@@ -108,12 +162,27 @@ export class BooksController {
     return this.booksService.searchBooksByCategory(categoryId, { ...params });
   }
 
+  @ApiOperation({ summary: 'Get details of a specific book by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Book details returned successfully.',
+  })
+  @ApiResponse({ status: 404, description: 'Book not found.' })
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.booksService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Toggle like/unlike for a book (Authenticated users only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Like status toggled successfully.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized.' })
   @Post(':id/toggle-like')
   async toggleLike(@Request() req, @Param('id') bookId: string) {
     return this.booksService.toggleLike(req.user.userId, bookId);
