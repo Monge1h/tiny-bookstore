@@ -14,7 +14,7 @@ export class CartService {
     const { bookId, quantity } = addToCartDto;
 
     const book = await this.databaseService.book.findUnique({
-      where: { id: bookId },
+      where: { id: bookId, isActive: true },
     });
     if (!book) {
       throw new NotFoundException('Book not found');

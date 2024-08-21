@@ -54,6 +54,7 @@ export class BooksService {
 
     const searchCondition: Prisma.BookWhereInput = search
       ? {
+          isActive: true,
           OR: [
             { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
             {
@@ -177,7 +178,7 @@ export class BooksService {
     const searchCondition: Prisma.BookWhereInput = search
       ? {
           AND: [
-            { categories: { some: { id: categoryId } } },
+            { categories: { some: { id: categoryId } }, isActive: true },
             {
               OR: [
                 {
@@ -261,7 +262,7 @@ export class BooksService {
 
   async toggleLike(userId: string, bookId: string) {
     const book = await this.databaseService.book.findUnique({
-      where: { id: bookId },
+      where: { id: bookId, isActive: true },
     });
     if (!book) {
       throw new NotFoundException('Book not found');
