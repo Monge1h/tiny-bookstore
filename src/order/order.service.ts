@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import { QueryParamsDto } from 'src/shared/dto/pagination.dto';
 import { paginateResult } from 'src/shared/utils/pagination.utils';
@@ -57,6 +58,74 @@ export class OrderService {
         skip: offset,
         take: limit,
         include: {
+          items: {
+            include: {
+              book: {
+                select: {
+                  title: true,
+                  author: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+    ]);
+
+    return paginateResult(count, orders, limit, page);
+  }
+
+  async getAllOrders({ page, limit, search }: QueryParamsDto) {
+    const offset = (page - 1) * limit;
+
+    const searchCondition = search
+      ? {
+          OR: [
+            {
+              user: {
+                email: { contains: search, mode: Prisma.QueryMode.insensitive },
+              },
+            },
+            {
+              user: {
+                firstName: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            },
+            {
+              user: {
+                lastName: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [count, orders] = await Promise.all([
+      this.databaseService.order.count({
+        where: searchCondition,
+      }),
+      this.databaseService.order.findMany({
+        where: searchCondition,
+        skip: offset,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
           items: {
             include: {
               book: {
