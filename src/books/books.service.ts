@@ -3,10 +3,51 @@ import { DatabaseService } from 'src/database/database.service';
 import { paginateResult } from 'src/shared/utils/pagination.utils';
 import { QueryParamsDto } from 'src/shared/dto/pagination.dto';
 import { Prisma } from '@prisma/client';
+import { CreateBookDto } from './dto/create-book.dto';
+import { UpdateBookDto } from './dto/update-book.dto';
 
 @Injectable()
 export class BooksService {
   constructor(private readonly databaseService: DatabaseService) {}
+
+  async createBook(createBookDto: CreateBookDto) {
+    return this.databaseService.book.create({
+      data: {
+        ...createBookDto,
+      },
+    });
+  }
+
+  async updateBook(id: string, updateBookDto: UpdateBookDto) {
+    const book = await this.databaseService.book.findUnique({
+      where: { id },
+    });
+    if (!book) {
+      throw new NotFoundException('Book not found');
+    }
+
+    return this.databaseService.book.update({
+      where: { id },
+      data: {
+        ...updateBookDto,
+      },
+    });
+  }
+
+  async deleteBook(id: string) {
+    const book = await this.databaseService.book.findUnique({
+      where: { id },
+    });
+    if (!book) {
+      throw new NotFoundException('Book not found');
+    }
+
+    await this.databaseService.book.delete({
+      where: { id },
+    });
+
+    return { message: 'Book deleted successfully' };
+  }
 
   async findAll({ limit, page, search }: QueryParamsDto) {
     const offset = (page - 1) * limit;
