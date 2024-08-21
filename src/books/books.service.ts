@@ -39,6 +39,7 @@ export class BooksService {
         include: {
           categories: {
             select: {
+              id: true,
               name: true,
             },
           },
@@ -65,7 +66,6 @@ export class BooksService {
       ...book,
       image: book.images.length > 0 ? book.images[0].imageUrl : null,
       likesCount: book._count.likes,
-      categories: book.categories.map((category) => category.name),
       images: undefined,
       _count: undefined,
     }));
@@ -117,6 +117,104 @@ export class BooksService {
       categories: book.categories.map((category) => category.name),
       createdAt: book.createdAt,
       updatedAt: book.updatedAt,
+    };
+  }
+
+  async searchBooksByCategory(
+    categoryId: string,
+    { search, page, limit }: QueryParamsDto,
+  ) {
+    const offset = (page - 1) * limit;
+
+    const category = await this.databaseService.category.findUnique({
+      where: { id: categoryId },
+    });
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    const searchCondition: Prisma.BookWhereInput = search
+      ? {
+          AND: [
+            { categories: { some: { id: categoryId } } },
+            {
+              OR: [
+                {
+                  title: {
+                    contains: search,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+                {
+                  author: {
+                    contains: search,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+                {
+                  description: {
+                    contains: search,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              ],
+            },
+          ],
+        }
+      : {
+          categories: { some: { id: categoryId } },
+        };
+
+    const [count, results] = await Promise.all([
+      this.databaseService.book.count({
+        where: searchCondition,
+      }),
+
+      this.databaseService.book.findMany({
+        where: searchCondition,
+        skip: offset,
+        take: limit,
+        include: {
+          categories: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+          images: {
+            select: {
+              imageUrl: true,
+              isPrimary: true,
+            },
+            orderBy: {
+              isPrimary: 'desc',
+            },
+            take: 1,
+          },
+        },
+      }),
+    ]);
+
+    const formattedResults = results.map((book) => ({
+      ...book,
+      image: book.images.length > 0 ? book.images[0].imageUrl : null,
+      likesCount: book._count.likes,
+      images: undefined,
+      _count: undefined,
+    }));
+
+    return {
+      results: formattedResults,
+      totalRecords: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      hasNextPage: offset + limit < count,
+      hasPreviousPage: page > 1,
     };
   }
 

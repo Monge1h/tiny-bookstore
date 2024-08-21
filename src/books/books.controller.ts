@@ -36,6 +36,28 @@ export class BooksController {
   findAll(@Query() params: QueryParamsDto) {
     return this.booksService.findAll({ ...params });
   }
+  @ApiQuery({
+    name: 'search',
+    type: String,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'page',
+    type: String,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: String,
+    required: false,
+  })
+  @Get('category/:categoryId')
+  findByCategory(
+    @Param('categoryId') categoryId: string,
+    @Query() params: QueryParamsDto,
+  ) {
+    return this.booksService.searchBooksByCategory(categoryId, { ...params });
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
