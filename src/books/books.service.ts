@@ -5,10 +5,15 @@ import { QueryParamsDto } from 'src/shared/dto/pagination.dto';
 import { Prisma } from '@prisma/client';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { UploadFileDto, FileType } from './dto/upload-file.dto';
 
 @Injectable()
 export class BooksService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   async createBook(createBookDto: CreateBookDto) {
     return this.databaseService.book.create({
@@ -32,6 +37,37 @@ export class BooksService {
         ...updateBookDto,
       },
     });
+  }
+
+  async uploadFile(
+    id: string,
+    file: Express.Multer.File,
+    uploadFileDto: UploadFileDto,
+  ) {
+    const book = await this.findOne(id);
+    const result = await this.cloudinaryService.uploadFile(file);
+
+    if (uploadFileDto.fileType === FileType.IMAGE) {
+      await this.databaseService.bookImage.create({
+        data: {
+          bookId: book.id,
+          imageUrl: result.secure_url,
+          isPrimary: false,
+        },
+      });
+    } else if (uploadFileDto.fileType === FileType.PDF) {
+      await this.databaseService.book.update({
+        where: { id: book.id },
+        data: {
+          fileUrl: result.secure_url,
+        },
+      });
+    }
+
+    return {
+      message: 'File uploaded successfully',
+      url: result.secure_url,
+    };
   }
 
   async deleteBook(id: string) {

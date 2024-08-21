@@ -9,6 +9,8 @@ import {
   Body,
   UseGuards,
   Request,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { QueryParamsDto } from 'src/shared/dto/pagination.dto';
@@ -19,6 +21,8 @@ import { Role } from '@prisma/client';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadFileDto } from './dto/upload-file.dto';
 
 @ApiTags('books')
 @Controller('books')
@@ -30,6 +34,18 @@ export class BooksController {
   @Post()
   async createBook(@Body() createBookDto: CreateBookDto) {
     return this.booksService.createBook(createBookDto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER)
+  @Post(':id/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() uploadFileDto: UploadFileDto,
+  ) {
+    return this.booksService.uploadFile(id, file, uploadFileDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
