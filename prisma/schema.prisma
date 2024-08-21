@@ -73,6 +73,7 @@ model Book {
   likes       Like[]
   cartItems   CartItem[]
   orders      OrderItem[]
+  categories  Category[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @default(now()) @updatedAt
 }
@@ -86,6 +87,16 @@ model BookImage {
 
   @@index([bookId])
   @@index([bookId, isPrimary])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([name])
 }
 model Like {
   id        String   @id @default(uuid())
