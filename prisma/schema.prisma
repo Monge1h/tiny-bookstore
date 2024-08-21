@@ -74,6 +74,7 @@ model Book {
   cartItems   CartItem[]
   orders      OrderItem[]
   categories  Category[]
+  isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @default(now()) @updatedAt
 }
