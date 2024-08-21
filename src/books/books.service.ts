@@ -119,4 +119,39 @@ export class BooksService {
       updatedAt: book.updatedAt,
     };
   }
+
+  async toggleLike(userId: string, bookId: string) {
+    const book = await this.databaseService.book.findUnique({
+      where: { id: bookId },
+    });
+    if (!book) {
+      throw new NotFoundException('Book not found');
+    }
+
+    const existingLike = await this.databaseService.like.findUnique({
+      where: {
+        userId_bookId: {
+          userId,
+          bookId,
+        },
+      },
+    });
+
+    if (existingLike) {
+      await this.databaseService.like.delete({
+        where: {
+          id: existingLike.id,
+        },
+      });
+      return { message: 'Like removed' };
+    } else {
+      await this.databaseService.like.create({
+        data: {
+          userId,
+          bookId,
+        },
+      });
+      return { message: 'Like added' };
+    }
+  }
 }

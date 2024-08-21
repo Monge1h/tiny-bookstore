@@ -1,7 +1,16 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { BooksService } from './books.service';
 import { QueryParamsDto } from 'src/shared/dto/pagination.dto';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('books')
 @Controller('books')
@@ -31,5 +40,11 @@ export class BooksController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.booksService.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/toggle-like')
+  async toggleLike(@Request() req, @Param('id') bookId: string) {
+    return this.booksService.toggleLike(req.user.userId, bookId);
   }
 }
